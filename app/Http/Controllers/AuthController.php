@@ -6,10 +6,11 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\BadResponseException;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\Models\Permission;
 
 class AuthController extends Controller
 {
-    //
     public function login(Request $request)
     {
         $email = $request->email;
@@ -24,9 +25,9 @@ class AuthController extends Controller
         try {
             return $client->post('http://127.0.0.1:8000/v1/oauth/token', [
                 "form_params" => [
-                    "client_secret" => 'ksksQpA0ZKibyrDTOcllanrDMV9oY9WCi0N0hUds',
+                    "client_secret" => 'WVdRl5jFc7ewYiaFLtI9DIliZLNfujOH8Oquoiwi',
                     "grant_type" => "password",
-                    "client_id" => 6,
+                    "client_id" => 2,
                     "username" => $request->email,
                     "password" => $request->password
                 ]
@@ -62,6 +63,9 @@ class AuthController extends Controller
             $user->password = app('hash')->make($password);
 
             if ($user->save()) {
+                // chỗ này dự định lúc đăng ký sẽ truyền vào là tạo tk cho ai
+                //em để mặc định mà user là role thấp nhất
+                $user->assignRole('user');
                 return $this->login($request);
             }
         } catch (\Exception $e) {
@@ -101,5 +105,28 @@ class AuthController extends Controller
         catch(\Exception $e){
             return response()->json(['status' => 'error', 'message' => $e->getMessage()]);
         }
+    }
+
+
+    //Assigning Roles Permission to user
+    
+    public function hasRoleTo(Request $request, $id)
+    {
+        $user = User::findById($id);
+        if($user->hasRole($request->role)){
+            return response()->json(['status' => 'error', 'message' => 'exit']);
+        }
+        $user->assignRole($request->role);
+        return response()->json(['status' => 'success', 'message' => 'successfully']);
+    }
+
+    public function givePermission(Request $request, $id)
+    {
+        $user = User::findById($id);
+        if($user->hasPermissionTo($request->permission)){
+            return response()->json(['status' => 'error', 'message' => 'exit']);
+        }
+        $user->givePermissionTo($request->permission);
+        return response()->json(['status' => 'success', 'message' => 'successfully']);
     }
 }
