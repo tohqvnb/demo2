@@ -27,13 +27,18 @@ $router->group(['prefix' => 'api'], function () use ($router) {
         $router->get('/me/{id}/', 'AuthController@me');
         $router->put('/edit/{id}/', 'AuthController@edit');
         $router->get('/posts', 'PostController@index');
-        // thêm xóa sửa bài viết sẽ do role writer mà chưa làm
-        $router->post('/posts', 'PostController@store');
-        $router->put('/posts/{id}', 'PostController@update');
-        $router->delete('/posts/{id}', 'PostController@destroy');
+        // thêm xóa sửa bài viết sẽ do role writer
+        $router->group(['middleware' => 'role:writer', 'prefix' => 'writer'], function () use ($router) {
+            $router->get('/posts', 'PostController@index');
+            $router->post('/posts', 'PostController@store');
+            $router->put('/posts/{id}', 'PostController@update');
+            $router->delete('/posts/{id}', 'PostController@destroy');
+        });
 
+        $router->group(['middleware' => 'role:admin', 'prefix' => 'admin'], function () use ($router) {
+            //admin co the xao bai viet
+            $router->delete('/posts/{id}', 'PostController@destroy');
 
-        $router->group(['middleware' =>'role:admin', 'prefix'=>'admin', 'name'=>'admin.'], function () use ($router) {
             //role
             $router->get('/roles', 'Admin\RoleController@index');
             $router->post('/roles', 'Admin\RoleController@store');
@@ -46,9 +51,8 @@ $router->group(['prefix' => 'api'], function () use ($router) {
             $router->delete('/permissions/{id}', 'Admin\PermissionController@destroy');
             //give permission to relo
             $router->post('/roles/{id}/permissions', 'Admin\RoleController@givepermission');
+            //give permission relo to user
+            $router->post('/users/{id}/roles', 'AuthController@RoleToUser');
         });
     });
 });
-
-
-
